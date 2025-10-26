@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+option go_package = "dormitory-helper-service/generated/proto/user;user";
+
+package user;
+
+message CheckAuthenticationRequest {
+  string token = 1;
+}
+
+message CheckAuthenticationResponse {
+  int32 user_id = 1;
+  string username = 2;
+  string token = 3;
+}
+
+service UserService {
+  rpc CheckAuthentication(CheckAuthenticationRequest) returns (CheckAuthenticationResponse);
+}

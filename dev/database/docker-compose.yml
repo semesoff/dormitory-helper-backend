@@ -1,0 +1,27 @@
+
+services:
+  database:
+    container_name: dormitory_helper_database
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - "${POSTGRES_PORT_EXTERNAL}:${POSTGRES_PORT_INTERNAL}"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  migrate:
+    container_name: migrations_runner
+    image: gomicro/goose
+    depends_on:
+      database:
+        condition: service_healthy
+    volumes:
+      - ../../migrations:/migrations
+    working_dir: /migrations
+    command: goose postgres "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@database:${POSTGRES_PORT_INTERNAL}/${POSTGRES_DB}?sslmode=disable" up

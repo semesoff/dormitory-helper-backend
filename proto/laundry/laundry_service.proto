@@ -1,0 +1,6 @@
+syntax = "proto3";
+
+option go_package = "dormitory-helper-service/generated/proto/laundry;laundry";
+
+package laundry;
+
