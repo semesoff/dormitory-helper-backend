@@ -2,6 +2,9 @@ PB_OUT=./generated/proto
 PROTO_SRC=./proto
 GOOGLEAPIS_DIR ?= ./proto:$(HOME)/proto/protoc-gen-validate:$(HOME)/proto/googleapis:$(HOME)/proto/grpc-gateway:$(GOPATH)
 
+.PHONY: all
+all: proto
+
 .PHONY: proto-user
 proto-user:
 	rm -rf $(PB_OUT)/user
@@ -59,15 +62,5 @@ install-proto-tools:
 run-backend:
 	go run cmd/app/app.go
 
-.PHONY: run-gateway
-run-gateway:
-	go run cmd/gateway/gateway.go
-
-.PHONY: run-all
-run-all:
-	@echo "Starting backend and gateway..."
-	@trap 'kill 0' EXIT; \
-	go run cmd/app/app.go & \
-	sleep 2 && \
-	go run cmd/gateway/gateway.go & \
-	wait
+.PHONY: run
+run: run-backend
