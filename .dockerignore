@@ -1,0 +1,23 @@
+# Git
+.git
+.gitignore
+
+# IDE
+.idea
+.vscode
+*.swp
+*.swo
+
+# Development files
+dev/
+
+# Binaries
+*.exe
+dormitory-helper
+
+# Dependencies (will be downloaded during build)
+vendor/
+
+# Environment
+.env.local
+.env.development
