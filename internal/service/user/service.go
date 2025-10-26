@@ -81,6 +81,13 @@ func (s *Service) CheckAuthentication(ctx context.Context, token string) (userId
 	}
 	defer conn.Release()
 
+	// Проверяем, существует ли пользователь
+	_, err = s.repo.GetUserByID(ctx, conn.Conn(), claims.UserID)
+	if err != nil {
+		// Пользователь не существует - создаем нового
+		return s.createNewUser(ctx)
+	}
+
 	// Проверяем, истек ли срок жизни пользователя
 	expired, err := s.repo.CheckUserExpired(ctx, conn.Conn(), claims.UserID)
 	if err != nil {

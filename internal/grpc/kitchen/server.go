@@ -2,6 +2,7 @@ package kitchenServer
 
 import (
 	"context"
+	kitchenProto "dormitory-helper-service/generated/proto/kitchen"
 	laundryRepository "dormitory-helper-service/internal/repository/laundry"
 	grpcUtils "dormitory-helper-service/internal/utils/grpc"
 	"time"
@@ -11,9 +12,6 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-// Placeholder types until proto files are generated
-// These will be replaced by actual generated types after running make proto
-
 type KitchenService interface {
 	CreateKitchenBooking(ctx context.Context, userID int, startTime, endTime time.Time) (int, error)
 	GetKitchenBookings(ctx context.Context, startTime, endTime *time.Time) ([]laundryRepository.Booking, error)
@@ -21,72 +19,9 @@ type KitchenService interface {
 	DeleteKitchenBooking(ctx context.Context, bookingID, userID int) error
 }
 
-// Placeholder proto message types
-type CreateKitchenBookingRequest struct {
-	Token     string
-	StartTime *timestamppb.Timestamp
-	EndTime   *timestamppb.Timestamp
-}
-
-type CreateKitchenBookingResponse struct {
-	BookingId int32
-	Message   string
-}
-
-type GetKitchenBookingsRequest struct {
-	StartTime *timestamppb.Timestamp
-	EndTime   *timestamppb.Timestamp
-}
-
-type KitchenBooking struct {
-	Id        int32
-	UserId    int32
-	StartTime *timestamppb.Timestamp
-	EndTime   *timestamppb.Timestamp
-}
-
-type GetKitchenBookingsResponse struct {
-	Bookings []*KitchenBooking
-}
-
-type GetUserKitchenBookingsRequest struct {
-	Token string
-}
-
-type GetUserKitchenBookingsResponse struct {
-	Bookings []*KitchenBooking
-}
-
-type DeleteKitchenBookingRequest struct {
-	Token     string
-	BookingId int32
-}
-
-type DeleteKitchenBookingResponse struct {
-	Message string
-}
-
-type UnimplementedKitchenServiceServer struct{}
-
-func (UnimplementedKitchenServiceServer) CreateKitchenBooking(context.Context, *CreateKitchenBookingRequest) (*CreateKitchenBookingResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method CreateKitchenBooking not implemented")
-}
-
-func (UnimplementedKitchenServiceServer) GetKitchenBookings(context.Context, *GetKitchenBookingsRequest) (*GetKitchenBookingsResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetKitchenBookings not implemented")
-}
-
-func (UnimplementedKitchenServiceServer) GetUserKitchenBookings(context.Context, *GetUserKitchenBookingsRequest) (*GetUserKitchenBookingsResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetUserKitchenBookings not implemented")
-}
-
-func (UnimplementedKitchenServiceServer) DeleteKitchenBooking(context.Context, *DeleteKitchenBookingRequest) (*DeleteKitchenBookingResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method DeleteKitchenBooking not implemented")
-}
-
 // Server implementation
 type Server struct {
-	UnimplementedKitchenServiceServer
+	kitchenProto.UnimplementedKitchenServiceServer
 	service   KitchenService
 	jwtSecret []byte
 }
@@ -98,7 +33,7 @@ func NewServer(service KitchenService, jwtSecret []byte) *Server {
 	}
 }
 
-func (s *Server) CreateKitchenBooking(ctx context.Context, req *CreateKitchenBookingRequest) (*CreateKitchenBookingResponse, error) {
+func (s *Server) CreateKitchenBooking(ctx context.Context, req *kitchenProto.CreateKitchenBookingRequest) (*kitchenProto.CreateKitchenBookingResponse, error) {
 	// Валидация JWT и получение user_id
 	userID, err := grpcUtils.ValidateTokenAndGetUserID(req.Token, s.jwtSecret)
 	if err != nil {
@@ -117,13 +52,13 @@ func (s *Server) CreateKitchenBooking(ctx context.Context, req *CreateKitchenBoo
 		return nil, status.Errorf(codes.Internal, "failed to create kitchen booking: %v", err)
 	}
 
-	return &CreateKitchenBookingResponse{
+	return &kitchenProto.CreateKitchenBookingResponse{
 		BookingId: int32(bookingID),
 		Message:   "Kitchen booking created successfully",
 	}, nil
 }
 
-func (s *Server) GetKitchenBookings(ctx context.Context, req *GetKitchenBookingsRequest) (*GetKitchenBookingsResponse, error) {
+func (s *Server) GetKitchenBookings(ctx context.Context, req *kitchenProto.GetKitchenBookingsRequest) (*kitchenProto.GetKitchenBookingsResponse, error) {
 	var startTime, endTime *time.Time
 	if req.StartTime != nil {
 		t := req.StartTime.AsTime()
@@ -139,12 +74,12 @@ func (s *Server) GetKitchenBookings(ctx context.Context, req *GetKitchenBookings
 		return nil, status.Errorf(codes.Internal, "failed to get kitchen bookings: %v", err)
 	}
 
-	response := &GetKitchenBookingsResponse{
-		Bookings: make([]*KitchenBooking, len(bookings)),
+	response := &kitchenProto.GetKitchenBookingsResponse{
+		Bookings: make([]*kitchenProto.KitchenBooking, len(bookings)),
 	}
 
 	for i, b := range bookings {
-		response.Bookings[i] = &KitchenBooking{
+		response.Bookings[i] = &kitchenProto.KitchenBooking{
 			Id:        int32(b.ID),
 			UserId:    int32(b.UserID),
 			StartTime: timestamppb.New(b.StartTime),
@@ -155,7 +90,7 @@ func (s *Server) GetKitchenBookings(ctx context.Context, req *GetKitchenBookings
 	return response, nil
 }
 
-func (s *Server) GetUserKitchenBookings(ctx context.Context, req *GetUserKitchenBookingsRequest) (*GetUserKitchenBookingsResponse, error) {
+func (s *Server) GetUserKitchenBookings(ctx context.Context, req *kitchenProto.GetUserKitchenBookingsRequest) (*kitchenProto.GetUserKitchenBookingsResponse, error) {
 	// Валидация JWT и получение user_id
 	userID, err := grpcUtils.ValidateTokenAndGetUserID(req.Token, s.jwtSecret)
 	if err != nil {
@@ -167,12 +102,12 @@ func (s *Server) GetUserKitchenBookings(ctx context.Context, req *GetUserKitchen
 		return nil, status.Errorf(codes.Internal, "failed to get user kitchen bookings: %v", err)
 	}
 
-	response := &GetUserKitchenBookingsResponse{
-		Bookings: make([]*KitchenBooking, len(bookings)),
+	response := &kitchenProto.GetUserKitchenBookingsResponse{
+		Bookings: make([]*kitchenProto.KitchenBooking, len(bookings)),
 	}
 
 	for i, b := range bookings {
-		response.Bookings[i] = &KitchenBooking{
+		response.Bookings[i] = &kitchenProto.KitchenBooking{
 			Id:        int32(b.ID),
 			UserId:    int32(b.UserID),
 			StartTime: timestamppb.New(b.StartTime),
@@ -183,7 +118,7 @@ func (s *Server) GetUserKitchenBookings(ctx context.Context, req *GetUserKitchen
 	return response, nil
 }
 
-func (s *Server) DeleteKitchenBooking(ctx context.Context, req *DeleteKitchenBookingRequest) (*DeleteKitchenBookingResponse, error) {
+func (s *Server) DeleteKitchenBooking(ctx context.Context, req *kitchenProto.DeleteKitchenBookingRequest) (*kitchenProto.DeleteKitchenBookingResponse, error) {
 	// Валидация JWT и получение user_id
 	userID, err := grpcUtils.ValidateTokenAndGetUserID(req.Token, s.jwtSecret)
 	if err != nil {
@@ -195,7 +130,7 @@ func (s *Server) DeleteKitchenBooking(ctx context.Context, req *DeleteKitchenBoo
 		return nil, status.Errorf(codes.Internal, "failed to delete kitchen booking: %v", err)
 	}
 
-	return &DeleteKitchenBookingResponse{
+	return &kitchenProto.DeleteKitchenBookingResponse{
 		Message: "Kitchen booking deleted successfully",
 	}, nil
 }

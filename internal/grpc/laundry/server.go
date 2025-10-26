@@ -2,6 +2,7 @@ package laundryServer
 
 import (
 	"context"
+	laundryProto "dormitory-helper-service/generated/proto/laundry"
 	laundryRepository "dormitory-helper-service/internal/repository/laundry"
 	grpcUtils "dormitory-helper-service/internal/utils/grpc"
 	"time"
@@ -11,9 +12,6 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-// Placeholder types until proto files are generated
-// These will be replaced by actual generated types after running make proto
-
 type LaundryService interface {
 	CreateLaundryBooking(ctx context.Context, userID int, startTime, endTime time.Time) (int, error)
 	GetLaundryBookings(ctx context.Context, startTime, endTime *time.Time) ([]laundryRepository.Booking, error)
@@ -21,72 +19,8 @@ type LaundryService interface {
 	DeleteLaundryBooking(ctx context.Context, bookingID, userID int) error
 }
 
-// Placeholder proto message types
-type CreateLaundryBookingRequest struct {
-	Token     string
-	StartTime *timestamppb.Timestamp
-	EndTime   *timestamppb.Timestamp
-}
-
-type CreateLaundryBookingResponse struct {
-	BookingId int32
-	Message   string
-}
-
-type GetLaundryBookingsRequest struct {
-	StartTime *timestamppb.Timestamp
-	EndTime   *timestamppb.Timestamp
-}
-
-type LaundryBooking struct {
-	Id        int32
-	UserId    int32
-	StartTime *timestamppb.Timestamp
-	EndTime   *timestamppb.Timestamp
-}
-
-type GetLaundryBookingsResponse struct {
-	Bookings []*LaundryBooking
-}
-
-type GetUserLaundryBookingsRequest struct {
-	Token string
-}
-
-type GetUserLaundryBookingsResponse struct {
-	Bookings []*LaundryBooking
-}
-
-type DeleteLaundryBookingRequest struct {
-	Token     string
-	BookingId int32
-}
-
-type DeleteLaundryBookingResponse struct {
-	Message string
-}
-
-type UnimplementedLaundryServiceServer struct{}
-
-func (UnimplementedLaundryServiceServer) CreateLaundryBooking(context.Context, *CreateLaundryBookingRequest) (*CreateLaundryBookingResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method CreateLaundryBooking not implemented")
-}
-
-func (UnimplementedLaundryServiceServer) GetLaundryBookings(context.Context, *GetLaundryBookingsRequest) (*GetLaundryBookingsResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetLaundryBookings not implemented")
-}
-
-func (UnimplementedLaundryServiceServer) GetUserLaundryBookings(context.Context, *GetUserLaundryBookingsRequest) (*GetUserLaundryBookingsResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetUserLaundryBookings not implemented")
-}
-
-func (UnimplementedLaundryServiceServer) DeleteLaundryBooking(context.Context, *DeleteLaundryBookingRequest) (*DeleteLaundryBookingResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method DeleteLaundryBooking not implemented")
-}
-
-// Server implementation
 type Server struct {
-	UnimplementedLaundryServiceServer
+	laundryProto.UnimplementedLaundryServiceServer
 	service   LaundryService
 	jwtSecret []byte
 }
@@ -98,8 +32,7 @@ func NewServer(service LaundryService, jwtSecret []byte) *Server {
 	}
 }
 
-func (s *Server) CreateLaundryBooking(ctx context.Context, req *CreateLaundryBookingRequest) (*CreateLaundryBookingResponse, error) {
-	// Валидация JWT и получение user_id
+func (s *Server) CreateLaundryBooking(ctx context.Context, req *laundryProto.CreateLaundryBookingRequest) (*laundryProto.CreateLaundryBookingResponse, error) {
 	userID, err := grpcUtils.ValidateTokenAndGetUserID(req.Token, s.jwtSecret)
 	if err != nil {
 		return nil, err
@@ -117,13 +50,13 @@ func (s *Server) CreateLaundryBooking(ctx context.Context, req *CreateLaundryBoo
 		return nil, status.Errorf(codes.Internal, "failed to create laundry booking: %v", err)
 	}
 
-	return &CreateLaundryBookingResponse{
+	return &laundryProto.CreateLaundryBookingResponse{
 		BookingId: int32(bookingID),
 		Message:   "Laundry booking created successfully",
 	}, nil
 }
 
-func (s *Server) GetLaundryBookings(ctx context.Context, req *GetLaundryBookingsRequest) (*GetLaundryBookingsResponse, error) {
+func (s *Server) GetLaundryBookings(ctx context.Context, req *laundryProto.GetLaundryBookingsRequest) (*laundryProto.GetLaundryBookingsResponse, error) {
 	var startTime, endTime *time.Time
 	if req.StartTime != nil {
 		t := req.StartTime.AsTime()
@@ -139,12 +72,12 @@ func (s *Server) GetLaundryBookings(ctx context.Context, req *GetLaundryBookings
 		return nil, status.Errorf(codes.Internal, "failed to get laundry bookings: %v", err)
 	}
 
-	response := &GetLaundryBookingsResponse{
-		Bookings: make([]*LaundryBooking, len(bookings)),
+	response := &laundryProto.GetLaundryBookingsResponse{
+		Bookings: make([]*laundryProto.LaundryBooking, len(bookings)),
 	}
 
 	for i, b := range bookings {
-		response.Bookings[i] = &LaundryBooking{
+		response.Bookings[i] = &laundryProto.LaundryBooking{
 			Id:        int32(b.ID),
 			UserId:    int32(b.UserID),
 			StartTime: timestamppb.New(b.StartTime),
@@ -155,8 +88,7 @@ func (s *Server) GetLaundryBookings(ctx context.Context, req *GetLaundryBookings
 	return response, nil
 }
 
-func (s *Server) GetUserLaundryBookings(ctx context.Context, req *GetUserLaundryBookingsRequest) (*GetUserLaundryBookingsResponse, error) {
-	// Валидация JWT и получение user_id
+func (s *Server) GetUserLaundryBookings(ctx context.Context, req *laundryProto.GetUserLaundryBookingsRequest) (*laundryProto.GetUserLaundryBookingsResponse, error) {
 	userID, err := grpcUtils.ValidateTokenAndGetUserID(req.Token, s.jwtSecret)
 	if err != nil {
 		return nil, err
@@ -167,12 +99,12 @@ func (s *Server) GetUserLaundryBookings(ctx context.Context, req *GetUserLaundry
 		return nil, status.Errorf(codes.Internal, "failed to get user laundry bookings: %v", err)
 	}
 
-	response := &GetUserLaundryBookingsResponse{
-		Bookings: make([]*LaundryBooking, len(bookings)),
+	response := &laundryProto.GetUserLaundryBookingsResponse{
+		Bookings: make([]*laundryProto.LaundryBooking, len(bookings)),
 	}
 
 	for i, b := range bookings {
-		response.Bookings[i] = &LaundryBooking{
+		response.Bookings[i] = &laundryProto.LaundryBooking{
 			Id:        int32(b.ID),
 			UserId:    int32(b.UserID),
 			StartTime: timestamppb.New(b.StartTime),
@@ -183,8 +115,7 @@ func (s *Server) GetUserLaundryBookings(ctx context.Context, req *GetUserLaundry
 	return response, nil
 }
 
-func (s *Server) DeleteLaundryBooking(ctx context.Context, req *DeleteLaundryBookingRequest) (*DeleteLaundryBookingResponse, error) {
-	// Валидация JWT и получение user_id
+func (s *Server) DeleteLaundryBooking(ctx context.Context, req *laundryProto.DeleteLaundryBookingRequest) (*laundryProto.DeleteLaundryBookingResponse, error) {
 	userID, err := grpcUtils.ValidateTokenAndGetUserID(req.Token, s.jwtSecret)
 	if err != nil {
 		return nil, err
@@ -195,7 +126,7 @@ func (s *Server) DeleteLaundryBooking(ctx context.Context, req *DeleteLaundryBoo
 		return nil, status.Errorf(codes.Internal, "failed to delete laundry booking: %v", err)
 	}
 
-	return &DeleteLaundryBookingResponse{
+	return &laundryProto.DeleteLaundryBookingResponse{
 		Message: "Laundry booking deleted successfully",
 	}, nil
 }

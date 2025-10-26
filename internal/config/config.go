@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"os"
 	"strconv"
-
-	"github.com/joho/godotenv"
 )
 
 type Config struct {
@@ -33,20 +31,15 @@ func NewConfig() *Config {
 }
 
 func (c *Config) Load() {
-	// Загрузка .env файла
-	if err := godotenv.Load(); err != nil {
-		panic(fmt.Sprintf("failed to load .env file: %v", err))
-	}
-
 	// Загрузка конфигурации сервера
 	c.ServerConfig.Host = os.Getenv("SERVER_HOST")
 	if c.ServerConfig.Host == "" {
-		panic("SERVER_HOST is required in .env file")
+		panic("SERVER_HOST environment variable is required")
 	}
 
 	portStr := os.Getenv("SERVER_PORT")
 	if portStr == "" {
-		panic("SERVER_PORT is required in .env file")
+		panic("SERVER_PORT environment variable is required")
 	}
 	port, err := strconv.Atoi(portStr)
 	if err != nil {
@@ -56,19 +49,19 @@ func (c *Config) Load() {
 
 	jwtSecret := os.Getenv("JWT_SECRET_KEY")
 	if jwtSecret == "" {
-		panic("JWT_SECRET_KEY is required in .env file")
+		panic("JWT_SECRET_KEY environment variable is required")
 	}
 	c.ServerConfig.JWTSecretKey = []byte(jwtSecret)
 
 	// Загрузка конфигурации базы данных
 	c.DatabaseConfig.Host = os.Getenv("DATABASE_HOST")
 	if c.DatabaseConfig.Host == "" {
-		panic("DATABASE_HOST is required in .env file")
+		panic("DATABASE_HOST environment variable is required")
 	}
 
 	dbPortStr := os.Getenv("DATABASE_PORT")
 	if dbPortStr == "" {
-		panic("DATABASE_PORT is required in .env file")
+		panic("DATABASE_PORT environment variable is required")
 	}
 	dbPort, err := strconv.Atoi(dbPortStr)
 	if err != nil {
@@ -78,21 +71,21 @@ func (c *Config) Load() {
 
 	c.DatabaseConfig.DBName = os.Getenv("DATABASE_NAME")
 	if c.DatabaseConfig.DBName == "" {
-		panic("DATABASE_NAME is required in .env file")
+		panic("DATABASE_NAME environment variable is required")
 	}
 
 	c.DatabaseConfig.User = os.Getenv("DATABASE_USER")
 	if c.DatabaseConfig.User == "" {
-		panic("DATABASE_USER is required in .env file")
+		panic("DATABASE_USER environment variable is required")
 	}
 
 	c.DatabaseConfig.Password = os.Getenv("DATABASE_PASSWORD")
 	if c.DatabaseConfig.Password == "" {
-		panic("DATABASE_PASSWORD is required in .env file")
+		panic("DATABASE_PASSWORD environment variable is required")
 	}
 
 	c.DatabaseConfig.Driver = os.Getenv("DRIVER")
 	if c.DatabaseConfig.Driver == "" {
-		panic("DRIVER is required in .env file")
+		panic("DRIVER environment variable is required")
 	}
 }

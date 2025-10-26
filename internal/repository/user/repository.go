@@ -89,6 +89,10 @@ func (r *Repository) CheckUserExpired(ctx context.Context, conn *pgx.Conn, userI
 		WHERE user_id = $1
 	`, userId).Scan(&expired)
 	if err != nil {
+		if err == pgx.ErrNoRows {
+			// Если записи нет, считаем что срок не истек (пользователь только создан)
+			return false, nil
+		}
 		return false, fmt.Errorf("failed to check user expiration for id %d: %w", userId, err)
 	}
 	return expired, nil

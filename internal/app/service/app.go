@@ -3,6 +3,8 @@ package serviceApp
 import (
 	"context"
 	"dormitory-helper-service/internal/config"
+	kitchenServer "dormitory-helper-service/internal/grpc/kitchen"
+	laundryServer "dormitory-helper-service/internal/grpc/laundry"
 	userServer "dormitory-helper-service/internal/grpc/user"
 	laundryRepository "dormitory-helper-service/internal/repository/laundry"
 	userRepository "dormitory-helper-service/internal/repository/user"
@@ -13,6 +15,8 @@ import (
 	"net/http"
 	"time"
 
+	kitchenProto "dormitory-helper-service/generated/proto/kitchen"
+	laundryProto "dormitory-helper-service/generated/proto/laundry"
 	userProto "dormitory-helper-service/generated/proto/user"
 
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
@@ -61,11 +65,11 @@ func Run() {
 
 	// Инициализация репозиториев
 	userRepo := userRepository.NewRepository()
-	_ = laundryRepository.NewRepository() // TODO: will be used when laundry/kitchen services are fixed
+	laundryRepo := laundryRepository.NewRepository()
 
 	// Инициализация сервисов
 	userServ := userService.NewService(userRepo, db, cfg.ServerConfig.JWTSecretKey)
-	_ = laundryService.NewService(laundryRepository.NewRepository(), db) // TODO: will be used when laundry/kitchen services are fixed
+	laundryServ := laundryService.NewService(laundryRepo, db)
 
 	// Создание HTTP gateway с grpc-gateway
 	mux := runtime.NewServeMux(
@@ -74,8 +78,8 @@ func Run() {
 
 	// Инициализация gRPC серверов
 	userGrpcServer := userServer.NewServer(userServ)
-	// laundryGrpcServer := laundryServer.NewServer(laundryServ, cfg.ServerConfig.JWTSecretKey)
-	// kitchenGrpcServer := kitchenServer.NewServer(laundryServ, cfg.ServerConfig.JWTSecretKey)
+	laundryGrpcServer := laundryServer.NewServer(laundryServ, cfg.ServerConfig.JWTSecretKey)
+	kitchenGrpcServer := kitchenServer.NewServer(laundryServ, cfg.ServerConfig.JWTSecretKey)
 
 	// Регистрация сервисов напрямую в gateway (in-process)
 	err = userProto.RegisterUserServiceHandlerServer(ctx, mux, userGrpcServer)
@@ -83,16 +87,15 @@ func Run() {
 		log.Fatalf("Failed to register user service handler: %v", err)
 	}
 
-	// TODO: Uncomment after fixing laundry and kitchen servers to use generated proto types
-	// err = laundryProto.RegisterLaundryServiceHandlerServer(ctx, mux, laundryGrpcServer)
-	// if err != nil {
-	// 	log.Fatalf("Failed to register laundry service handler: %v", err)
-	// }
+	err = laundryProto.RegisterLaundryServiceHandlerServer(ctx, mux, laundryGrpcServer)
+	if err != nil {
+		log.Fatalf("Failed to register laundry service handler: %v", err)
+	}
 
-	// err = kitchenProto.RegisterKitchenServiceHandlerServer(ctx, mux, kitchenGrpcServer)
-	// if err != nil {
-	// 	log.Fatalf("Failed to register kitchen service handler: %v", err)
-	// }
+	err = kitchenProto.RegisterKitchenServiceHandlerServer(ctx, mux, kitchenGrpcServer)
+	if err != nil {
+		log.Fatalf("Failed to register kitchen service handler: %v", err)
+	}
 
 	// HTTP сервер с middleware
 	httpAddress := ":8081"
