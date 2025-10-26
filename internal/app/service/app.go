@@ -3,14 +3,21 @@ package serviceApp
 import (
 	"context"
 	"dormitory-helper-service/internal/config"
+	kitchenServer "dormitory-helper-service/internal/grpc/kitchen"
+	laundryServer "dormitory-helper-service/internal/grpc/laundry"
 	userServer "dormitory-helper-service/internal/grpc/user"
+	laundryRepository "dormitory-helper-service/internal/repository/laundry"
 	userRepository "dormitory-helper-service/internal/repository/user"
+	laundryService "dormitory-helper-service/internal/service/laundry"
 	userService "dormitory-helper-service/internal/service/user"
 	"fmt"
 	"log"
 	"net"
 
 	userProto "dormitory-helper-service/generated/proto/user"
+	// Uncomment these after running `make proto`:
+	// laundryProto "dormitory-helper-service/generated/proto/laundry"
+	// kitchenProto "dormitory-helper-service/generated/proto/kitchen"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"google.golang.org/grpc"
@@ -58,9 +65,11 @@ func Run() {
 
 	// Инициализация репозиториев
 	userRepo := userRepository.NewRepository()
+	laundryRepo := laundryRepository.NewRepository()
 
 	// Инициализация сервисов
 	userServ := userService.NewService(userRepo, db, cfg.ServerConfig.JWTSecretKey)
+	laundryServ := laundryService.NewService(laundryRepo, db)
 
 	// Инициализация gRPC сервера
 	grpcServer := grpc.NewServer()
@@ -68,6 +77,17 @@ func Run() {
 	// Регистрация сервисов
 	userGrpcServer := userServer.NewServer(userServ)
 	userProto.RegisterUserServiceServer(grpcServer, userGrpcServer)
+
+	// Регистрация сервисов стирки и кухни
+	// Note: These servers use placeholder types until proto files are generated
+	// After running `make proto`, uncomment the proto imports above and update the registration:
+	laundryGrpcServer := laundryServer.NewServer(laundryServ, cfg.ServerConfig.JWTSecretKey)
+	_ = laundryGrpcServer // Placeholder until proto registration is available
+	// laundryProto.RegisterLaundryServiceServer(grpcServer, laundryGrpcServer)
+
+	kitchenGrpcServer := kitchenServer.NewServer(laundryServ, cfg.ServerConfig.JWTSecretKey)
+	_ = kitchenGrpcServer // Placeholder until proto registration is available
+	// kitchenProto.RegisterKitchenServiceServer(grpcServer, kitchenGrpcServer)
 
 	// Запуск gRPC сервера
 	address := fmt.Sprintf("%s:%d", cfg.ServerConfig.Host, cfg.ServerConfig.Port)

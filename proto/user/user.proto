@@ -4,6 +4,8 @@ option go_package = "dormitory-helper-service/generated/proto/user;user";
 
 package user;
 
+import "google/api/annotations.proto";
+
 message CheckAuthenticationRequest {
   string token = 1;
 }
@@ -15,5 +17,10 @@ message CheckAuthenticationResponse {
 }
 
 service UserService {
-  rpc CheckAuthentication(CheckAuthenticationRequest) returns (CheckAuthenticationResponse);
+  rpc CheckAuthentication(CheckAuthenticationRequest) returns (CheckAuthenticationResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/auth/check"
+      body: "*"
+    };
+  }
 }

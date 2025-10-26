@@ -4,3 +4,77 @@ option go_package = "dormitory-helper-service/generated/proto/laundry;laundry";
 
 package laundry;
 
+import "google/protobuf/timestamp.proto";
+import "google/api/annotations.proto";
+
+// Сообщение для создания записи на стирку
+message CreateLaundryBookingRequest {
+  string token = 1;
+  google.protobuf.Timestamp start_time = 2;
+  google.protobuf.Timestamp end_time = 3;
+}
+
+message CreateLaundryBookingResponse {
+  int32 booking_id = 1;
+  string message = 2;
+}
+
+// Сообщение для получения всех записей
+message GetLaundryBookingsRequest {
+  optional google.protobuf.Timestamp start_time = 1;
+  optional google.protobuf.Timestamp end_time = 2;
+}
+
+message LaundryBooking {
+  int32 id = 1;
+  int32 user_id = 2;
+  google.protobuf.Timestamp start_time = 3;
+  google.protobuf.Timestamp end_time = 4;
+}
+
+message GetLaundryBookingsResponse {
+  repeated LaundryBooking bookings = 1;
+}
+
+// Сообщение для получения записей пользователя
+message GetUserLaundryBookingsRequest {
+  string token = 1;
+}
+
+message GetUserLaundryBookingsResponse {
+  repeated LaundryBooking bookings = 1;
+}
+
+// Сообщение для удаления записи
+message DeleteLaundryBookingRequest {
+  string token = 1;
+  int32 booking_id = 2;
+}
+
+message DeleteLaundryBookingResponse {
+  string message = 1;
+}
+
+service LaundryService {
+  rpc CreateLaundryBooking(CreateLaundryBookingRequest) returns (CreateLaundryBookingResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/laundry/bookings"
+      body: "*"
+    };
+  }
+  rpc GetLaundryBookings(GetLaundryBookingsRequest) returns (GetLaundryBookingsResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/laundry/bookings"
+    };
+  }
+  rpc GetUserLaundryBookings(GetUserLaundryBookingsRequest) returns (GetUserLaundryBookingsResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/laundry/bookings/my"
+    };
+  }
+  rpc DeleteLaundryBooking(DeleteLaundryBookingRequest) returns (DeleteLaundryBookingResponse) {
+    option (google.api.http) = {
+      delete: "/api/v1/laundry/bookings/{booking_id}"
+    };
+  }
+}
