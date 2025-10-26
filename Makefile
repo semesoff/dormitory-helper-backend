@@ -1,6 +1,6 @@
 PB_OUT=./generated/proto
 PROTO_SRC=./proto
-GOOGLEAPIS_DIR=./third_party/googleapis
+GOOGLEAPIS_DIR ?= ./proto:$(HOME)/proto/protoc-gen-validate:$(HOME)/proto/googleapis:$(HOME)/proto/grpc-gateway:$(GOPATH)
 
 .PHONY: proto-user
 proto-user:
